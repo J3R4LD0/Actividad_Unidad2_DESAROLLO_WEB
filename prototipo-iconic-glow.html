@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prototipo — Iconic Glow</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+:root{
+  --rose:#E8A4B8; --rose-deep:#C5687E; --gold:#D4A85A; --cream:#FDF6F0;
+  --charcoal:#1C1C1E; --mid:#6B6B6B; --light:#F5EBE8; --white:#FFFFFF;
+  --r-sm:8px; --r-md:16px; --r-lg:28px;
+  --shadow:0 8px 32px rgba(197,104,126,.15);
+  --ff-display:'Playfair Display',serif; --ff-body:'DM Sans',sans-serif;
+  --frame-bg:#2a2530;
+}
+:root:not([data-theme="light"]){ }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--ff-body);background:#151217;color:var(--charcoal);min-height:100vh;}
+img{max-width:100%;display:block;}
+a{text-decoration:none;color:inherit;}
+ul{list-style:none;}
+button{cursor:pointer;border:none;font-family:var(--ff-body);}
+
+/* ===== TOP: barra del prototipo (no forma parte del sitio) ===== */
+#proto-topbar{
+  position:sticky; top:0; z-index:200;
+  background:#1b171d; color:#fff;
+  padding:.85rem 1.5rem;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:.75rem;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.proto-title{display:flex; flex-direction:column; gap:2px;}
+.proto-title b{font-family:var(--ff-display); font-size:1.05rem;}
+.proto-title span{font-size:.72rem; color:#a8a2ad; letter-spacing:.03em;}
+.proto-tabs{display:flex; gap:.4rem; flex-wrap:wrap;}
+.proto-tab{
+  padding:8px 14px; border-radius:50px; font-size:.78rem; font-weight:600;
+  background:rgba(255,255,255,.07); color:#d8d3dc; transition:.2s;
+  display:flex; align-items:center; gap:6px;
+}
+.proto-tab:hover{background:rgba(232,164,184,.25); color:#fff;}
+.proto-tab.active{background:var(--rose-deep); color:#fff;}
+.proto-tab i{font-size:.75rem;}
+#annoToggle{
+  padding:8px 14px; border-radius:50px; font-size:.75rem; font-weight:600;
+  background:rgba(212,168,90,.18); color:var(--gold); border:1px solid rgba(212,168,90,.4);
+}
+#annoToggle.on{background:var(--gold); color:#1b171d;}
+
+/* ===== FLUJO DE NAVEGACIÓN DETECTADO ===== */
+#flow-bar{
+  background:#100e12; color:#c9c2cf; font-size:.72rem;
+  padding:.5rem 1.5rem; display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+#flow-bar b{color:var(--gold); font-weight:700; margin-right:.3rem;}
+.flow-step{background:rgba(255,255,255,.06); padding:3px 10px; border-radius:50px;}
+.flow-arrow{color:#6b6473;}
+
+/* ===== MARCO TIPO NAVEGADOR ===== */
+#device-wrap{ padding:2.5rem 1.5rem 4rem; display:flex; justify-content:center; }
+#device-frame{
+  width:100%; max-width:1180px; background:var(--frame-bg); border-radius:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,.5); overflow:hidden;
+}
+.browser-chrome{
+  display:flex; align-items:center; gap:10px; padding:12px 16px; background:#231f28;
+}
+.chrome-dots{display:flex; gap:6px;}
+.chrome-dots span{width:11px; height:11px; border-radius:50%; background:#463f4d;}
+.chrome-url{
+  flex:1; background:#2f2a34; color:#a8a2ad; font-size:.75rem; padding:6px 14px;
+  border-radius:50px; font-family:monospace;
+}
+#screen-viewport{ background:var(--cream); min-height:640px; position:relative; }
+
+/* ===== ANOTACIONES ===== */
+.anno{
+  position:absolute; z-index:50; background:var(--gold); color:#1b171d;
+  font-size:.62rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  padding:3px 9px; border-radius:5px; display:none; box-shadow:0 2px 8px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+body.show-anno .anno{display:inline-block;}
+body.show-anno .anno-zone{outline:2px dashed rgba(212,168,90,.65); outline-offset:-2px;}
+
+/* ===== SCREENS ===== */
+.screen{ display:none; }
+.screen.active{ display:block; animation:fade .35s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+/* mini header reused on every screen */
+.s-header{
+  position:relative; display:flex; align-items:center; justify-content:space-between;
+  padding:1rem 2rem; background:rgba(253,246,240,.95); border-bottom:1px solid rgba(232,164,184,.3);
+}
+.s-logo{font-family:var(--ff-display); font-weight:900; font-size:1.25rem; color:var(--rose-deep);}
+.s-logo span{color:var(--gold);}
+.s-nav{display:flex; gap:1.4rem;}
+.s-nav a{font-size:.78rem; font-weight:600; color:var(--mid);}
+.s-nav a:hover{color:var(--rose-deep);}
+.s-actions{display:flex; gap:.6rem; align-items:center;}
+.s-actions .pill{background:var(--rose-deep); color:#fff; font-size:.72rem; font-weight:600; padding:7px 14px; border-radius:50px; display:flex; gap:5px; align-items:center;}
+.s-actions i.far{color:var(--mid); font-size:1rem;}
+
+/* content wrappers */
+.s-section{padding:2.4rem 2rem;}
+.s-eyebrow{font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:700;}
+.s-title{font-family:var(--ff-display); font-size:1.7rem; font-weight:800; margin:.4rem 0 .6rem;}
+.s-sub{color:var(--mid); font-size:.88rem; max-width:480px;}
+
+/* HERO */
+.hero-proto{
+  position:relative; padding:3rem 2rem; display:grid; grid-template-columns:1.1fr .9fr; gap:2rem; align-items:center;
+  background:linear-gradient(135deg,#FDF6F0 0%,#FAE8EF 55%,#FDF1E3 100%);
+}
+.hero-proto h1{font-family:var(--ff-display); font-size:2.3rem; font-weight:900; line-height:1.1; margin:.6rem 0 1rem;}
+.hero-proto h1 em{color:var(--rose-deep); font-style:normal;}
+.hero-proto p{color:var(--mid); font-size:.92rem; max-width:380px; margin-bottom:1.4rem;}
+.hero-ctas{display:flex; gap:.7rem; flex-wrap:wrap;}
+.btn-primary{background:var(--rose-deep); color:#fff; padding:11px 22px; border-radius:var(--r-sm); font-weight:700; font-size:.82rem; display:inline-flex; gap:8px; align-items:center;}
+.btn-outline{border:2px solid var(--rose-deep); color:var(--rose-deep); padding:9px 20px; border-radius:var(--r-sm); font-weight:700; font-size:.82rem;}
+.hero-stats{display:flex; gap:1.5rem; margin-top:1.6rem;}
+.hero-stats .st b{display:block; font-family:var(--ff-display); font-size:1.3rem; color:var(--rose-deep);}
+.hero-stats .st span{font-size:.65rem; color:var(--mid); text-transform:uppercase; letter-spacing:.05em;}
+.hero-blob-proto{
+  aspect-ratio:1; border-radius:55% 45% 60% 40%/50% 60% 40% 50%;
+  background:radial-gradient(ellipse at 40% 40%,#F5C6D4 0%,#EAA4C0 45%,#D48BAA 100%);
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:1.6rem; place-items:center;
+}
+.hero-blob-proto div{background:rgba(255,255,255,.7); border-radius:14px; width:100%; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;}
+.hero-blob-proto i{color:var(--rose-deep); font-size:1.1rem;}
+.hero-blob-proto span{font-size:.55rem; font-weight:700; color:var(--mid);}
+
+/* Category chips + product grid */
+.chip-row{display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1.6rem;}
+.chip{padding:7px 16px; border-radius:50px; font-size:.76rem; font-weight:600; border:1.5px solid var(--rose); color:var(--rose-deep);}
+.chip.active{background:var(--rose-deep); color:#fff; border-color:var(--rose-deep);}
+.grid-prod{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1.1rem;}
+.card-prod{background:#fff; border-radius:var(--r-md); overflow:hidden; box-shadow:0 2px 14px rgba(197,104,126,.1); cursor:pointer; transition:.25s;}
+.card-prod:hover{transform:translateY(-5px); box-shadow:var(--shadow);}
+.card-prod .ph{height:130px; background:linear-gradient(135deg,#FAE8EF,#FDF1E3); display:flex; align-items:center; justify-content:center; position:relative;}
+.card-prod .ph i{font-size:2.2rem; color:var(--rose); opacity:.55;}
+.badge-mini{position:absolute; top:8px; left:8px; background:var(--gold); color:#fff; font-size:.58rem; font-weight:700; padding:2px 8px; border-radius:50px; text-transform:uppercase;}
+.card-prod .info{padding:.9rem;}
+.card-prod .cat{font-size:.6rem; color:var(--rose-deep); font-weight:700; text-transform:uppercase; letter-spacing:.06em;}
+.card-prod .name{font-family:var(--ff-display); font-weight:700; font-size:.92rem; margin:.25rem 0;}
+.card-prod .price{color:var(--rose-deep); font-weight:800; font-size:1rem; font-family:var(--ff-display);}
+.load-more-proto{display:block; margin:1.8rem auto 0; background:var(--rose-deep); color:#fff; padding:10px 26px; border-radius:var(--r-sm); font-weight:700; font-size:.8rem;}
+
+/* Detalle de producto */
+.detail-wrap{display:grid; grid-template-columns:.9fr 1.1fr; gap:2rem; padding:2.4rem 2rem;}
+.detail-img{background:linear-gradient(135deg,#FAE8EF,#FDF1E3); border-radius:var(--r-lg); aspect-ratio:1; display:flex; align-items:center; justify-content:center;}
+.detail-img i{font-size:5rem; color:var(--rose); opacity:.5;}
+.detail-price{font-family:var(--ff-display); font-size:2rem; color:var(--rose-deep); font-weight:900; margin:.6rem 0 1rem;}
+.detail-cta{display:flex; gap:.8rem; margin-top:1.4rem; flex-wrap:wrap;}
+.btn-whatsapp{background:#25D366; color:#fff; padding:11px 22px; border-radius:var(--r-sm); font-weight:700; font-size:.82rem; display:inline-flex; gap:8px; align-items:center;}
+
+/* Nosotros */
+.about-wrap{display:grid; grid-template-columns:1fr 1fr; gap:2rem; padding:2.4rem 2rem; align-items:center;}
+.about-wrap p{color:var(--mid); font-size:.9rem; line-height:1.7; margin-bottom:.9rem;}
+.about-img{background:linear-gradient(135deg,#EAA4C0,#F5C6D4); border-radius:var(--r-lg); min-height:280px; display:flex; align-items:center; justify-content:center;}
+.about-img i{font-size:4rem; color:#fff; opacity:.8;}
+.value-row{display:flex; gap:1rem; margin-top:1.2rem; flex-wrap:wrap;}
+.value-pill{background:var(--light); padding:8px 16px; border-radius:50px; font-size:.75rem; font-weight:600; color:var(--rose-deep); display:flex; gap:6px; align-items:center;}
+
+/* Promo */
+.promo-proto{background:linear-gradient(135deg,var(--rose-deep) 0%,#9B3F55 100%); color:#fff; text-align:center; padding:3rem 2rem;}
+.promo-proto h2{font-family:var(--ff-display); font-size:2rem; font-weight:900; margin:.5rem 0 .8rem;}
+.cd-row{display:flex; gap:.8rem; justify-content:center; margin:1.4rem 0;}
+.cd-box{background:rgba(255,255,255,.15); border-radius:10px; padding:10px 16px; min-width:60px;}
+.cd-box b{display:block; font-family:var(--ff-display); font-size:1.5rem;}
+.cd-box span{font-size:.58rem; text-transform:uppercase; opacity:.75;}
+.btn-white{background:#fff; color:var(--rose-deep); padding:11px 26px; border-radius:var(--r-sm); font-weight:700; font-size:.82rem;}
+
+/* Testimonios */
+.testi-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1.2rem; padding:0 2rem 2.4rem;}
+.testi-card{background:#fff; border-radius:var(--r-md); padding:1.4rem; box-shadow:0 2px 14px rgba(197,104,126,.08);}
+.testi-card p{font-size:.82rem; color:var(--mid); margin-bottom:.9rem; line-height:1.55;}
+.testi-author{display:flex; gap:.6rem; align-items:center;}
+.testi-avatar{width:36px; height:36px; border-radius:50%; background:var(--rose); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.75rem;}
+.testi-name{font-weight:700; font-size:.8rem;}
+.testi-loc{font-size:.68rem; color:var(--mid);}
+.stars-mini{color:var(--gold); font-size:.7rem;}
+
+/* Contacto */
+.contact-wrap{display:grid; grid-template-columns:.9fr 1.1fr; gap:2rem; padding:2.4rem 2rem;}
+.c-item{display:flex; gap:.7rem; align-items:center; margin-bottom:.9rem; font-size:.85rem; color:var(--mid);}
+.c-item i{color:var(--rose-deep); width:18px;}
+.form-proto{display:flex; flex-direction:column; gap:.8rem;}
+.form-proto input, .form-proto textarea{
+  padding:11px 14px; border:1.5px solid var(--light); border-radius:var(--r-sm); font-family:var(--ff-body); font-size:.85rem; background:#fff;
+}
+.form-proto button{background:var(--rose-deep); color:#fff; padding:12px; border-radius:var(--r-sm); font-weight:700; font-size:.85rem;}
+
+/* Footer */
+.s-footer{background:var(--charcoal); color:#cfc9cf; padding:2rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:1.2rem; font-size:.78rem;}
+.s-footer b{color:#fff; font-family:var(--ff-display); font-size:1rem; display:block; margin-bottom:.4rem;}
+.s-footer .col{min-width:160px;}
+.s-footer .col p{margin:.2rem 0; color:#a8a2ad;}
+
+/* justificación mini panel bottom */
+#why-bar{
+  background:#1b171d; color:#c9c2cf; padding:1rem 2rem; font-size:.78rem; line-height:1.5;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+#why-bar b{color:var(--gold);}
+
+@media (max-width:760px){
+  .hero-proto, .detail-wrap, .about-wrap, .contact-wrap{grid-template-columns:1fr;}
+  .s-nav{display:none;}
+  #proto-topbar{flex-direction:column; align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<div id="proto-topbar">
+  <div class="proto-title">
+    <b>Prototipo — Iconic Glow</b>
+    <span>Actividad Unidad 2 · Desarrollo Software Web · Jeraldo Morales</span>
+  </div>
+  <div class="proto-tabs" id="tabs"></div>
+  <button id="annoToggle"><i class="fas fa-tag"></i> Ver anotaciones</button>
+</div>
+
+<div id="flow-bar">
+  <b>Flujo de navegación:</b>
+  <div id="flow-track"></div>
+</div>
+
+<div id="device-wrap">
+  <div id="device-frame">
+    <div class="browser-chrome">
+      <div class="chrome-dots"><span></span><span></span><span></span></div>
+      <div class="chrome-url" id="chrome-url">iconicglow.com/inicio</div>
+    </div>
+    <div id="screen-viewport"></div>
+  </div>
+</div>
+
+<div id="why-bar">
+  <b>Decisión de diseño:</b> <span id="why-text">La estructura y los colores reutilizan la identidad visual real de Iconic Glow (rosa/dorado, tipografía Playfair Display + DM Sans) para que el prototipo sea reconocible por el negocio y sus clientas desde la primera vista.</span>
+</div>
+
+<script>
+const TABS = [
+  {id:'inicio', label:'Inicio', icon:'fa-house'},
+  {id:'nosotros', label:'Nosotros', icon:'fa-heart'},
+  {id:'catalogo', label:'Catálogo', icon:'fa-gem'},
+  {id:'detalle', label:'Detalle', icon:'fa-tag'},
+  {id:'promociones', label:'Promociones', icon:'fa-fire'},
+  {id:'testimonios', label:'Testimonios', icon:'fa-star'},
+  {id:'contacto', label:'Contacto', icon:'fa-envelope'},
+];
+
+const WHY = {
+  inicio:'El Home concentra en una sola pantalla la propuesta de valor, el CTA principal ("Ver catálogo") y las cifras de confianza, porque la usuaria potencial necesita entender en segundos de qué trata el negocio.',
+  nosotros:'La página "Nosotros" responde a la necesidad de credibilidad detectada en la Unidad 1: clientas nuevas piden referencias antes de comprar, así que se prioriza cercanía y ubicación real (Arjona, Bolívar).',
+  catalogo:'El catálogo con filtros por categoría resuelve el problema central identificado: la información de productos estaba dispersa entre publicaciones de Instagram. Aquí queda organizada y permanente.',
+  detalle:'La vista de detalle permite decidir sin escribir por WhatsApp: precio, descripción y dos acciones claras (agregar / pedir por WhatsApp), reduciendo la carga de mensajes uno a uno sobre quien administra el negocio.',
+  promociones:'Las promociones con temporizador recrean la urgencia que hoy solo vive en las historias de Instagram (y que desaparece en 24h), dándoles un espacio permanente y visible.',
+  testimonios:'Las reseñas de clientas reales generan la confianza que, según la justificación de la Unidad 1, hoy depende solo del "voz a voz" en el municipio.',
+  contacto:'El formulario de contacto y el botón de WhatsApp conviven para no perder al público que aún prefiere el canal directo, mientras se ofrece una vía adicional más estructurada.',
+};
+
+let currentProduct = {name:'Labial Mate Rosa Nude', cat:'Labiales', price:'$28.000', desc:'Fórmula mate de larga duración con acabado aterciopelado, ideal para looks de día y de noche. Uno de los productos más pedidos por las clientas de Iconic Glow.'};
+let flow = ['Inicio'];
+
+function buildTabs(){
+  const box = document.getElementById('tabs');
+  box.innerHTML = TABS.map(t => `<button class="proto-tab" data-go="${t.id}"><i class="fas ${t.icon}"></i>${t.label}</button>`).join('');
+  box.querySelectorAll('.proto-tab').forEach(b => b.addEventListener('click', () => goTo(b.dataset.go, true)));
+}
+
+function renderFlow(){
+  document.getElementById('flow-track').innerHTML = flow.map((f,i) =>
+    (i>0?'<span class="flow-arrow">→</span>':'') + `<span class="flow-step">${f}</span>`
+  ).join('');
+}
+
+function header(active){
+  return `
+  <div class="s-header">
+    <div class="s-logo">Iconic<span>Glow</span></div>
+    <div class="s-nav">
+      <a data-go="inicio">Inicio</a><a data-go="nosotros">Nosotros</a><a data-go="catalogo">Catálogo</a>
+      <a data-go="testimonios">Reseñas</a><a data-go="contacto">Contacto</a>
+    </div>
+    <div class="s-actions">
+      <i class="far fa-heart"></i>
+      <span class="pill"><i class="fas fa-bag-shopping"></i> Carrito</span>
+    </div>
+    <span class="anno anno-header" style="top:6px;left:2rem;">Encabezado · Logo + menú + acciones</span>
+  </div>`;
+}
+
+function footer(){
+  return `
+  <div class="s-footer anno-zone" style="position:relative;">
+    <span class="anno" style="top:-10px;left:2rem;">Pie de página · contacto, redes, horarios</span>
+    <div class="col"><b>Iconic Glow</b><p>Maquillaje &amp; belleza en Arjona, Bolívar.</p></div>
+    <div class="col"><b>Contacto</b><p><i class="fas fa-phone"></i> +57 300 320 4832</p><p><i class="fas fa-envelope"></i> iconicglow@gmail.com</p></div>
+    <div class="col"><b>Redes</b><p><i class="fab fa-instagram"></i> @iconic_glow_oficial</p></div>
+    <div class="col"><b>Horarios</b><p>Lun–Sáb · 9:00am – 6:00pm</p></div>
+  </div>`;
+}
+
+const SCREENS = {
+inicio: () => `
+  ${header()}
+  <div class="hero-proto anno-zone">
+    <span class="anno" style="top:10px;left:10px;">Contenido principal · título + CTA</span>
+    <div>
+      <span class="s-eyebrow">✦ Maquillaje &amp; Belleza · Arjona, Bolívar</span>
+      <h1>Tu <em>brillo</em> es<br/>nuestra pasión</h1>
+      <p>Catálogo organizado, pedidos claros y contacto directo: todo lo que hoy vive disperso en redes, ahora en un solo lugar.</p>
+      <div class="hero-ctas">
+        <button class="btn-primary" data-go="catalogo"><i class="fas fa-gem"></i> Ver catálogo</button>
+        <button class="btn-outline" data-go="contacto">Contáctanos</button>
+      </div>
+      <div class="hero-stats">
+        <div class="st"><b>+200</b><span>Productos</span></div>
+        <div class="st"><b>+500</b><span>Clientas</span></div>
+        <div class="st"><b>4.9★</b><span>Valoración</span></div>
+      </div>
+    </div>
+    <div class="hero-blob-proto">
+      <div><i class="fas fa-paint-brush"></i><span>Labiales</span></div>
+      <div><i class="fas fa-eye"></i><span>Ojos</span></div>
+      <div><i class="fas fa-spa"></i><span>Cuidado</span></div>
+      <div><i class="fas fa-gem"></i><span>Glitter</span></div>
+      <div><i class="fas fa-droplet"></i><span>Base</span></div>
+      <div><i class="fas fa-star"></i><span>Promos</span></div>
+    </div>
+  </div>
+  ${footer()}
+`,
+
+nosotros: () => `
+  ${header()}
+  <div class="s-section" style="padding-bottom:0;">
+    <span class="s-eyebrow">Nuestra historia</span>
+    <h2 class="s-title">Sobre Iconic Glow</h2>
+  </div>
+  <div class="about-wrap anno-zone">
+    <span class="anno" style="top:0;left:10px;">Contenido principal · historia + valores</span>
+    <div class="about-img"><i class="fas fa-heart"></i></div>
+    <div>
+      <p>Iconic Glow nació en Arjona, Bolívar, como un emprendimiento familiar dedicado a acercar productos de maquillaje y cuidado de la piel a mujeres de la región, con atención cercana y personalizada.</p>
+      <p>Hoy seguimos creciendo gracias a nuestras clientas, y damos el siguiente paso: construir un espacio propio en internet donde puedan conocernos, ver el catálogo completo y contactarnos con confianza, sin depender solo de Instagram.</p>
+      <div class="value-row">
+        <span class="value-pill"><i class="fas fa-certificate"></i> Productos originales</span>
+        <span class="value-pill"><i class="fas fa-hand-holding-heart"></i> Atención cercana</span>
+        <span class="value-pill"><i class="fas fa-location-dot"></i> Arjona, Bolívar</span>
+      </div>
+    </div>
+  </div>
+  ${footer()}
+`,
+
+catalogo: () => `
+  ${header()}
+  <div class="s-section anno-zone">
+    <span class="anno" style="top:0;left:1rem;">Contenido principal · catálogo organizado por categoría</span>
+    <span class="s-eyebrow">Catálogo</span>
+    <h2 class="s-title">Nuestros productos</h2>
+    <div class="chip-row">
+      <span class="chip active">Todos</span><span class="chip">Labiales</span><span class="chip">Bases</span>
+      <span class="chip">Ojos</span><span class="chip">Glitter</span><span class="chip">Cuidado de la piel</span>
+    </div>
+    <div class="grid-prod" id="prodGrid"></div>
+    <button class="load-more-proto">Ver más productos</button>
+  </div>
+  ${footer()}
+`,
+
+detalle: () => `
+  ${header()}
+  <div class="detail-wrap anno-zone">
+    <span class="anno" style="top:0;left:10px;">Contenido principal · ficha de producto</span>
+    <div class="detail-img"><i class="fas fa-gem"></i></div>
+    <div>
+      <span class="s-eyebrow">${currentProduct.cat}</span>
+      <h2 class="s-title" style="margin-bottom:.3rem;">${currentProduct.name}</h2>
+      <div class="stars-mini">★★★★★ <span style="color:var(--mid);font-size:.72rem;">(48 reseñas)</span></div>
+      <div class="detail-price">${currentProduct.price}</div>
+      <p style="color:var(--mid); font-size:.88rem; line-height:1.6;">${currentProduct.desc}</p>
+      <div class="detail-cta">
+        <button class="btn-primary"><i class="fas fa-bag-shopping"></i> Agregar al carrito</button>
+        <button class="btn-whatsapp" data-go="contacto"><i class="fab fa-whatsapp"></i> Pedir por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+  ${footer()}
+`,
+
+promociones: () => `
+  ${header()}
+  <div class="promo-proto anno-zone">
+    <span class="anno" style="top:6px;left:1rem;background:#fff;color:#9B3F55;">Contenido principal · oferta + urgencia</span>
+    <span class="s-eyebrow" style="color:var(--gold);">Oferta especial</span>
+    <h2>¡Hasta 30% de descuento!</h2>
+    <p style="opacity:.9;max-width:420px;margin:0 auto;">Solo por tiempo limitado en labiales, paletas y bases seleccionadas.</p>
+    <div class="cd-row">
+      <div class="cd-box"><b>08</b><span>Horas</span></div>
+      <div class="cd-box"><b>24</b><span>Min</span></div>
+      <div class="cd-box"><b>50</b><span>Seg</span></div>
+    </div>
+    <button class="btn-white" data-go="catalogo">Aprovechar oferta</button>
+  </div>
+  ${footer()}
+`,
+
+testimonios: () => `
+  ${header()}
+  <div class="s-section" style="padding-bottom:0;">
+    <span class="s-eyebrow">Reseñas</span>
+    <h2 class="s-title">Lo que dicen nuestras clientas</h2>
+  </div>
+  <div class="testi-grid anno-zone">
+    <span class="anno" style="top:-8px;left:2rem;">Contenido principal · prueba social</span>
+    <div class="testi-card"><p>"Los productos son increíbles. El labial matte duró todo el día sin retoques."</p><div class="testi-author"><div class="testi-avatar">VR</div><div><div class="testi-name">Valentina Ruiz</div><div class="testi-loc">Arjona, Bolívar</div><div class="stars-mini">★★★★★</div></div></div></div>
+    <div class="testi-card"><p>"Excelente atención y envío rapidísimo. Colores hermosos y muy pigmentados."</p><div class="testi-author"><div class="testi-avatar">DP</div><div><div class="testi-name">Daniela Pérez</div><div class="testi-loc">Cartagena</div><div class="stars-mini">★★★★★</div></div></div></div>
+    <div class="testi-card"><p>"Me encanta poder ver todos los productos organizados. ¡Ahora es mucho más fácil!"</p><div class="testi-author"><div class="testi-avatar">SM</div><div><div class="testi-name">Sofía Martínez</div><div class="testi-loc">Turbaco</div><div class="stars-mini">★★★★★</div></div></div></div>
+  </div>
+  ${footer()}
+`,
+
+contacto: () => `
+  ${header()}
+  <div class="contact-wrap anno-zone">
+    <span class="anno" style="top:0;left:10px;">Contenido principal · info + formulario</span>
+    <div>
+      <span class="s-eyebrow">Habla con nosotros</span>
+      <h2 class="s-title">Contáctanos</h2>
+      <div class="c-item"><i class="fas fa-location-dot"></i> Arjona, Bolívar, Colombia</div>
+      <div class="c-item"><i class="fas fa-phone"></i> +57 300 320 4832</div>
+      <div class="c-item"><i class="fas fa-envelope"></i> iconicglow@gmail.com</div>
+      <div class="c-item"><i class="fab fa-instagram"></i> @iconic_glow_oficial</div>
+      <div class="c-item"><i class="fas fa-clock"></i> Lun–Sáb · 9:00am – 6:00pm</div>
+    </div>
+    <form class="form-proto" onsubmit="return false;">
+      <input placeholder="Nombre completo" />
+      <input placeholder="Correo electrónico" />
+      <textarea rows="4" placeholder="Escribe tu mensaje..."></textarea>
+      <button type="submit">Enviar mensaje</button>
+    </form>
+  </div>
+  ${footer()}
+`,
+};
+
+const PRODUCTS = [
+  {name:'Labial Mate Rosa Nude', cat:'Labiales', price:'$28.000', icon:'fa-paint-brush', desc:'Fórmula mate de larga duración con acabado aterciopelado, ideal para looks de día y de noche. Uno de los productos más pedidos por las clientas de Iconic Glow.'},
+  {name:'Base Líquida HD Natural', cat:'Bases', price:'$45.000', icon:'fa-droplet', desc:'Cobertura media a alta con acabado natural, formulada para piel mixta y grasa. Dura todo el día sin sensación pesada.'},
+  {name:'Paleta Sombras Sunset', cat:'Ojos', price:'$52.000', icon:'fa-eye', desc:'12 tonos cálidos altamente pigmentados, ideales para crear looks desde el día hasta la noche.'},
+  {name:'Glitter Suelto Holográfico', cat:'Glitter', price:'$18.000', icon:'fa-gem', desc:'Brillo intenso multidimensional para looks de fiesta, fácil de aplicar con o sin base fijadora.'},
+  {name:'Sérum Vitamina C', cat:'Cuidado de la piel', price:'$38.000', icon:'fa-spa', desc:'Ilumina y unifica el tono de la piel; notarás diferencia en luminosidad en pocas semanas de uso.'},
+  {name:'Brocha Kabuki Profesional', cat:'Cuidado de la piel', price:'$22.000', icon:'fa-brush', desc:'Cerdas suaves sintéticas para un difuminado uniforme de base y polvos.'},
+];
+
+function renderProducts(){
+  const grid = document.getElementById('prodGrid');
+  if(!grid) return;
+  grid.innerHTML = PRODUCTS.map((p,i) => `
+    <div class="card-prod" data-open="${i}">
+      <div class="ph"><span class="badge-mini">${i<2?'Top ventas':'Nuevo'}</span><i class="fas ${p.icon}"></i></div>
+      <div class="info">
+        <div class="cat">${p.cat}</div>
+        <div class="name">${p.name}</div>
+        <div class="price">${p.price}</div>
+      </div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => {
+    currentProduct = PRODUCTS[+el.dataset.open];
+    goTo('detalle', true);
+  }));
+}
+
+function goTo(id, userClick){
+  document.getElementById('screen-viewport').innerHTML = SCREENS[id]();
+  document.querySelectorAll('.proto-tab').forEach(b => b.classList.toggle('active', b.dataset.go===id));
+  document.getElementById('chrome-url').textContent = 'iconicglow.com/' + id;
+  document.getElementById('why-text').textContent = WHY[id];
+  document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => goTo(el.dataset.go, true)));
+  if(id==='catalogo') renderProducts();
+  if(userClick){
+    const label = TABS.find(t=>t.id===id)?.label || id;
+    if(flow[flow.length-1] !== label){ flow.push(label); if(flow.length>6) flow.shift(); }
+    renderFlow();
+  }
+}
+
+document.getElementById('annoToggle').addEventListener('click', function(){
+  document.body.classList.toggle('show-anno');
+  this.classList.toggle('on');
+  this.innerHTML = document.body.classList.contains('show-anno')
+    ? '<i class="fas fa-tag"></i> Ocultar anotaciones'
+    : '<i class="fas fa-tag"></i> Ver anotaciones';
+});
+
+buildTabs();
+renderFlow();
+goTo('inicio', false);
+</script>
+</body>
+</html>
